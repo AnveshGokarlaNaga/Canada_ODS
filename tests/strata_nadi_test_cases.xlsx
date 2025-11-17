@@ -1,0 +1,36 @@
+Test_ID,Area,Purpose,SQL,Pass_Criteria,Notes,Severity
+"STRATA-01","STRATA","Column list (schema) parity","-- Source columns
+select column_name, data_type from information_schema.columns where table_schema = 'reds_qa_bronze' and table_name = 'tb_reds_strata_nadi_terms_conditions' order by ordinal_position;
+-- Target columns
+select column_name, data_type from information_schema.columns where table_schema = 'public' and table_name = 'STRATA_Terms_Conditions' order by ordinal_position;","Column_name lists identical and compatible data_types","If columns differ, map columns or use explicit column lists before row-level checks","High"
+"STRATA-02","STRATA","Row count comparison","select
+ (select count(*) from can_ods_q01.reds_qa_bronze.tb_reds_strata_nadi_terms_conditions where PERIL_CODES = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23') as src_count,
+ (select count(*) from STRATA_Terms_Conditions where As_Of_Date = '2025-09-30' and Peril_Codes = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23') as tgt_count;","src_count = tgt_count","If not equal, run EXCEPT to find discrepancies","High"
+"STRATA-03","STRATA","Row-level equality (set difference)","-- Source rows not in target
+select * from can_ods_q01.reds_qa_bronze.tb_reds_strata_nadi_terms_conditions src where PERIL_CODES = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23' except select * from STRATA_Terms_Conditions tgt where As_Of_Date = '2025-09-30' and Peril_Codes = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23';
+-- Target rows not in source
+select * from STRATA_Terms_Conditions tgt where As_Of_Date = '2025-09-30' and Peril_Codes = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23' except select * from can_ods_q01.reds_qa_bronze.tb_reds_strata_nadi_terms_conditions src where PERIL_CODES = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23';","Both EXCEPT queries return zero rows","If timestamp/precision differences exist, normalize columns or use explicit selects","High"
+"STRATA-04","STRATA","COVER_TYPE_CODES distinct set equality","-- Source distinct cover types
+select distinct COVER_TYPE_CODES as cover_type from can_ods_q01.reds_qa_bronze.tb_reds_strata_nadi_terms_conditions where PERIL_CODES = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23' order by cover_type;
+-- Target distinct cover types
+select distinct Cover_Type_Codes as cover_type from STRATA_Terms_Conditions where As_Of_Date = '2025-09-30' and Peril_Codes = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23' order by cover_type;
+-- Differences
+select distinct COVER_TYPE_CODES from can_ods_q01.reds_qa_bronze.tb_reds_strata_nadi_terms_conditions where PERIL_CODES = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23' except select distinct Cover_Type_Codes from STRATA_Terms_Conditions where As_Of_Date = '2025-09-30' and Peril_Codes = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23';","No differences (zero rows)","Normalize case/whitespace with lower(trim(...)) if needed","Medium"
+"STRATA-05","STRATA","Row-level checksum/hash validation (optional)","-- Example (Postgres functions shown)
+select md5(string_agg(md5(concat_ws('|', col1, col2, col3)), order by pk_col)) as src_hash from (select col1, col2, col3 from can_ods_q01.reds_qa_bronze.tb_reds_strata_nadi_terms_conditions where PERIL_CODES = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23') s;
+select md5(string_agg(md5(concat_ws('|', col1, col2, col3)), order by pk_col)) as tgt_hash from (select col1, col2, col3 from STRATA_Terms_Conditions where As_Of_Date = '2025-09-30' and Peril_Codes = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23') t;","src_hash = tgt_hash","Use explicit column list and stable ordering; adapt hash functions to engine","Low"
+"NADI-01","NADI","Column list parity","-- Source columns
+select column_name, data_type from information_schema.columns where table_schema = 'reds_qa_bronze' and table_name = 'tb_nadi_strata_reds_terms_conditions' order by ordinal_position;
+-- Target columns
+select column_name, data_type from information_schema.columns where table_schema = 'public' and table_name = 'NADI_Terms_Conditions' order by ordinal_position;","Column lists identical and compatible types","If mismatched, map or use explicit column lists","High"
+"NADI-02","NADI","Row count comparison","select (select count(*) from can_ods_q01.reds_qa_bronze.tb_nadi_strata_reds_terms_conditions where PERIL_CODES = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23') as src_count, (select count(*) from NADI_Terms_Conditions where As_Of_Date = '2025-08-31' and Peril_Codes = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23') as tgt_count;","src_count = tgt_count","If not equal, run EXCEPT to isolate rows","High"
+"NADI-03","NADI","Row-level equality (set difference)","select * from can_ods_q01.reds_qa_bronze.tb_nadi_strata_reds_terms_conditions src where PERIL_CODES = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23' except select * from NADI_Terms_Conditions tgt where As_Of_Date = '2025-08-31' and Peril_Codes = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23';
+-- Reverse
+select * from NADI_Terms_Conditions tgt where As_Of_Date = '2025-08-31' and Peril_Codes = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23' except select * from can_ods_q01.reds_qa_bronze.tb_nadi_strata_reds_terms_conditions src where PERIL_CODES = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23';","Both EXCEPT queries return zero rows","Normalize data types if necessary","High"
+"NADI-04","NADI","COVER_TYPE_CODES distinct set equality","select distinct COVER_TYPE_CODES as cover_type from can_ods_q01.reds_qa_bronze.tb_nadi_strata_reds_terms_conditions where PERIL_CODES = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23' order by cover_type;
+select distinct Cover_Type_Codes as cover_type from NADI_Terms_Conditions where As_Of_Date = '2025-08-31' and Peril_Codes = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23' order by cover_type;
+-- Differences using EXCEPT as above","No differences (zero rows)","Normalize case/whitespace when comparing","Medium"
+"NADI-05","NADI","Checksum/hash validation (optional)","-- Use same pattern as STRATA-05, with explicit column list and stable ordering","src_hash = tgt_hash","Adapt hash funcs per engine; use explicit col list","Low"
+"ADDT-01","Both","Peril_Codes exact-string check","select Peril_Codes, count(*) from STRATA_Terms_Conditions where As_Of_Date = '2025-09-30' group by Peril_Codes;","Peril_Codes equals expected string with no trailing/leading spaces","Check for multiple similar strings due to spacing","Low"
+"ADDT-02","Both","NULLs in key columns","select count(*) from STRATA_Terms_Conditions where As_Of_Date = '2025-09-30' and (Peril_Codes is null or Cover_Type_Codes is null);","Zero rows with NULLs in key columns (if PK required)","Adjust depending on business rules","Medium"
+"ADDT-03","Both","Spot-check by PK","select src.*, tgt.* from (select * from can_ods_q01.reds_qa_bronze.tb_reds_strata_nadi_terms_conditions where PERIL_CODES = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23' limit 10) src full outer join (select * from STRATA_Terms_Conditions where As_Of_Date = '2025-09-30' and Peril_Codes = '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23' limit 10) tgt using (PrimaryKeyColumn);","Manual inspection of joined rows","Replace PrimaryKeyColumn with actual PK","Low"
