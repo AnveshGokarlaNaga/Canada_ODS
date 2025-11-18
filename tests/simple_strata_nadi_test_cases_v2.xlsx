@@ -1,0 +1,9 @@
+Test_case_no,Test_case_description,Expected_result,Test_results(Passed or Failed)
+1,"STRATA - Row count matches between source and target","Counts equal",
+2,"STRATA - COVER_TYPE_CODES distinct set matches","Sets equal",
+3,"STRATA - Row-level equality (no differences via EXCEPT)","No rows returned by EXCEPT",
+4,"NADI - Row count matches between source and target","Counts equal",
+5,"NADI - COVER_TYPE_CODES distinct set matches","Sets equal",
+6,"NADI - Row-level equality (no differences via EXCEPT)","No rows returned by EXCEPT",
+7,"Peril_Codes string exact match in TARGET (no leading/trailing spaces)","Exact match to '3;6;7;8;9;11;16;17;18;22;26;27;31;175;12;15;20;23'",
+8,"Check for NULLs in key columns in TARGET (As_Of_Date rows)","Zero NULLs in Peril_Codes or Cover_Type_Codes unless allowed",
